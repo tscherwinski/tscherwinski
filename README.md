@@ -1,4 +1,11 @@
-## Hi there 👋
+## Homelab Projects
+
+| Project | What it shows |
+|---|---|
+| [onboarding-automation](https://github.com/tscherwinski/onboarding-automation) | AD, mail, ticket system and intranet in VMs, plus automated user onboarding |
+| [doc-assistant](https://github.com/tscherwinski/doc-assistant) | Local AI stack in Docker with OCR, field extraction and RAG search |
+
+[View all homelab projects →](https://github.com/search?q=user%3Atscherwinski+topic%3Ahomelab&type=repositories)
 
 <!--
 **tscherwinski/tscherwinski** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
