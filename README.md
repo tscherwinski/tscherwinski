@@ -37,4 +37,4 @@ Certified IT specialist for system integration with a broad focus on administrat
 
 ## Core Stack
 
-`Windows Server` `Active Directory` `Linux` `Networking` `PowerShell` `Bash` `Kali Linux` `Burp Suite`
+`Windows Server` `Active Directory` `Arch Linux` `Networking` `PowerShell` `Bash` `Kali Linux` `Burp Suite`
