@@ -33,6 +33,10 @@ Certified IT specialist for system integration with a broad focus on administrat
 ## Latest Writeups
 
 <!-- WRITEUPS:START -->
+| Machine | Platform | OS | Difficulty |
+|---|---|---|---|
+
+[All writeups](https://github.com/tscherwinski/writeups)
 <!-- WRITEUPS:END -->
 
 ## Core Stack
