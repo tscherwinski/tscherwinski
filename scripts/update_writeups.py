@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Update the "Latest Writeups" table in the profile README.
 
-Reads every README.md in the writeups repo (htb/<box>/README.md, thm/<room>/README.md,
-ctf/<event>/<challenge>/README.md ...), takes the YAML front matter, sorts by date and
-writes the newest entries between the WRITEUPS markers in this README.
+Reads every Markdown file inside a folder of the writeups repo (e.g. htb/<box>/README.md
+or "HTB Principal/Principal.md"), keeps those whose YAML front matter has a date, sorts by
+date and writes the newest entries between the WRITEUPS markers in this README.
+Folders or files starting with "_" (templates) are skipped, and so is any writeup with
+"status: active" in its front matter.
 
     python scripts/update_writeups.py                     # GitHub mode (used by the workflow)
     python scripts/update_writeups.py --local ../writeups # test against a local clone
@@ -14,6 +16,7 @@ import os
 import re
 import urllib.error
 import urllib.request
+from urllib.parse import quote
 from pathlib import Path
 
 import yaml
@@ -43,30 +46,40 @@ def frontmatter(text):
     return {}
 
 
+def wanted(path):
+    parts = path.split("/")
+    return (
+        len(parts) > 1
+        and path.lower().endswith(".md")
+        and not any(part.startswith("_") for part in parts)
+    )
+
+
 def collect_remote():
     tree = json.loads(get(f"https://api.github.com/repos/{OWNER}/{REPO}/git/trees/{BRANCH}?recursive=1"))
     for item in tree.get("tree", []):
         p = item["path"]
-        if p.endswith("/README.md") and not any(part.startswith("_") for part in p.split("/")):
-            raw = get(f"https://raw.githubusercontent.com/{OWNER}/{REPO}/{BRANCH}/{p}")
-            yield p.rsplit("/", 1)[0], frontmatter(raw)
+        if item.get("type") == "blob" and wanted(p):
+            raw = get(f"https://raw.githubusercontent.com/{OWNER}/{REPO}/{BRANCH}/{quote(p)}")
+            yield p, frontmatter(raw)
 
 
 def collect_local(root: Path):
-    for f in root.rglob("README.md"):
-        rel = f.relative_to(root)
-        if len(rel.parts) > 1 and not any(part.startswith("_") for part in rel.parts):
-            yield rel.parent.as_posix(), frontmatter(f.read_text(encoding="utf-8"))
+    for f in root.rglob("*.md"):
+        rel = f.relative_to(root).as_posix()
+        if wanted(rel):
+            yield rel, frontmatter(f.read_text(encoding="utf-8"))
 
 
 def table(entries):
     rows = ["| Machine | Platform | OS | Difficulty |", "|---|---|---|---|"]
-    for folder, m in entries:
-        link = f"https://github.com/{OWNER}/{REPO}/tree/{BRANCH}/{folder}"
-        rows.append(f"| [{m.get('title', folder.rsplit('/', 1)[-1])}]({link}) | {m.get('platform', '')} "
+    for path, m in entries:
+        link = f"https://github.com/{OWNER}/{REPO}/blob/{BRANCH}/{quote(path)}"
+        name = m.get("title") or path.rsplit("/", 1)[0].rsplit("/", 1)[-1]
+        rows.append(f"| [{name}]({link}) | {m.get('platform', '')} "
                     f"| {m.get('os', '')} | {m.get('difficulty', '')} |")
     rows.append("")
-    rows.append(f"[All writeups →](https://github.com/{OWNER}/{REPO})")
+    rows.append(f"[All writeups](https://github.com/{OWNER}/{REPO})")
     return "\n".join(rows)
 
 
@@ -80,7 +93,10 @@ def main():
     except urllib.error.HTTPError as e:
         print(f"Writeups repo not reachable yet ({e.code}), nothing to update")
         return
-    found = [e for e in found if e[1].get("date")]
+    found = [
+        e for e in found
+        if e[1].get("date") and str(e[1].get("status", "")).strip().lower() != "active"
+    ]
     found.sort(key=lambda e: str(e[1]["date"]), reverse=True)
 
     readme = README.read_text(encoding="utf-8")
